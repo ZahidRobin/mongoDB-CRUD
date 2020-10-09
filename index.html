@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MongoDB CRUD</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        .form-control{
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" class="text-center">
+        <h1 class="text-center">Post data to Mongo Database</h1>
+        <form action="/addProduct" method="post">
+            <input type="text" name="name" class="form-control" placeholder="name">
+            <input type="text" name="price" class="form-control" placeholder="price">
+            <input type="text" name="quantity" class="form-control" placeholder="quantity">
+            <button type="submit" class="btn btn-primary">Add Product</button>
+        </form>
+        <div class="py-5">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Price</th>
+                      <th>Quantity</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="products">
+
+                  </tbody>
+            </table>
+        </div>
+
+        <div id="update">
+
+        </div>
+    </div>
+    
+    <script>
+        function loadProducts(){
+            fetch('/products')
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById('products');
+                container.innerHTML = '';
+                data.forEach(product => {
+                    const p =  document.createElement('tr');
+                    p.innerHTML = `<td>${product.name}</td><td>${product.price}</td><td>${product.quantity}</td><td><button onclick="deleteProduct(event, '${product._id}')" class='btn btn-danger'>Delete</button> <button onclick="loadProduct('${product._id}')" class='btn btn-primary'>Update</button></td>`;
+                    container.appendChild(p);
+                });
+            })
+        }
+        loadProducts();
+
+        function deleteProduct(event, id){
+            console.log(event.target.parentNode.parentNode);
+            fetch(`/delete/${id}`,{
+                method: 'DELETE'
+            })
+            .then(res => res.json())
+            .then(result => {
+                if(result){
+                    event.target.parentNode.parentNode.style.display = "none";
+                }
+            })
+        }
+        
+        function loadProduct(id){
+            fetch(`/singleProduct/${id}`)
+            .then(res => res.json())
+            .then(result => {
+                const update = document.getElementById('update');
+                update.innerHTML = `
+                    <h3>Update : ${result.name}</h3>
+                    Price : <input class="form-control" type="text" id="price" value="${result.price}">
+                    Quantity : <input class="form-control" type="text" id="quantity" value="${result.quantity}">
+                    <button onclick="updateProduct('${result._id}')" type="submit" class="btn btn-primary">Submit</button>
+
+                `
+            })
+        }
+
+        function updateProduct(id){
+            const price = document.getElementById('price').value;
+            const quantity = document.getElementById('quantity').value;
+            const product = {id, price, quantity};
+            fetch(`/update/${id}`,{
+                method: 'PATCH',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(product)
+            })
+            .then(res => res.json())
+            .then(result => {
+                if(result){
+                    loadProducts();
+                    document.getElementById('update').innerHTML = '';
+                }
+            })
+        }
+    </script>
+</body>
+</html>
